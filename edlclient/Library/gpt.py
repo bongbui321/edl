@@ -16,7 +16,7 @@ from enum import Enum
 from binascii import hexlify
 from struct import calcsize, unpack, pack
 from io import BytesIO
-from binascii import crc32
+from binascii import crc32, unhexlify
 
 class ColorFormatter(logging.Formatter):
     LOG_COLORS = {
@@ -483,6 +483,95 @@ class gpt(metaclass=LogBase):
         assert res, "GPT Partition wasn't decoded properly"
 
     def patch(self, data:bytes, partitionname="boot", active: bool = True):
+        data_types = {
+            "system_a" : b'd46c0377d503bb428ed137e5a88baa34',
+            "xbl_a" : b'2cbaa0deddcb0548b4f9f428251c3e98',
+            "xbl_config_a" : b'e45a325a76426db60add3494df27706a',
+            "aop_a" : b'a5909ed6ab4c7100f6dfab977f141a7f',
+            "tz_a" : b'7faa53a0b8401c4bba082f68ac71a4f4',
+            "hyp_a" : b'89a6a6e18d0cc64cb4e855a4320fbd8a',
+            "modem_a" : b'a2a0d0ebe5b9334487c068b6b72699c7',
+            "bluetooth_a" : b'f147b76cefc29240add0ca39f79c7af4',
+            "mdtpsecapp_a" : b'80d602ea12875245a3bee6087829c1e6',
+            "mdtp_a" : b'8a40783863e2674bb8786340b35b11e3',
+            "abl_a" : b'a12869bde04c38a04f3a1495e3eddffb',
+            "dsp_a" : b'1050fe7e1a2a1a4ab8bc990257813512',
+            "keymaster_a" : b'7c2a1da12ad82f4c8a011805240e6626',
+            "boot_a" : b'867f112085e95743b9ee374bc1d8487d',
+            "cmnlib_a" : b'9517477354abf943a8474f72ea5cbef5',
+            "cmnlib64_a" : b'9348a68e67121b4a947c7c362acaad2c',
+            "devcfg_a" : b'164b5df63d34254eaafcbe99b6556a6d',
+            "qupfw_a" : b'9f21d121d12eb44a930a41a16ae75f7f',
+            "storsec_a" : b'fe45db021badb64caecc0042c637defa',
+            "ImageFv_a" : b'77119117e6c97243933c804b678e666f',
+
+            "system_b" : b'11b0d797da543548b3c4917ad6e73d74',
+            "xbl_b" : b'2cbaa0deddcb0548b4f9f428251c3e98',
+            "xbl_config_b" : b'e45a325a76426db60add3494df27706a',
+            "aop_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "tz_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "hyp_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "modem_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "bluetooth_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "mdtpsecapp_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "mdtp_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "abl_b" : b'77b014415d00124eac8cb493bda684fb',
+            "dsp_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "keymaster_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "boot_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "cmnlib_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "cmnlib64_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "devcfg_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "qupfw_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "storsec_b" : b'd46c0377d503bb428ed137e5a88baa34',
+            "ImageFv_b" : b'd46c0377d503bb428ed137e5a88baa34',
+
+        }
+
+        data_flags = {
+            "system_a" : 1125899906842624,
+            "xbl_a" : 1170654428139618304,
+            "xbl_config_a" : 17732923532771328,
+            "aop_a" : 17732923532771328,
+            "tz_a" : 17732923532771328,
+            "hyp_a" : 17732923532771328,
+            "modem_a" : 1170654428139618304,
+            "bluetooth_a" : 1170654428139618304,
+            "mdtpsecapp_a" : 1170654428139618304,
+            "mdtp_a" : 1170654428139618304,
+            "abl_a" : 1170654428139618304,
+            "dsp_a" : 1170654428139618304,
+            "keymaster_a" : 1170654428139618304,
+            "boot_a" : 33495522228568064,
+            "cmnlib_a" : 1170654428139618304,
+            "cmnlib64_a" : 1170654428139618304,
+            "devcfg_a" : 17732923532771328,
+            "qupfw_a" : 17732923532771328,
+            "storsec_a" : 17732923532771328,
+            "ImageFv_a" : 17732923532771328,
+
+            "system_b" : 0,
+            "xbl_b" : 1168965578279354368,
+            "xbl_config_b" : 16044073672507392,
+            "aop_b" : 1168965578279354368,
+            "tz_b" : 1168965578279354368,
+            "hyp_b" : 16044073672507392,
+            "modem_b" : 1168965578279354368,
+            "bluetooth_b" : 1168965578279354368,
+            "mdtpsecapp_b" : 1168965578279354368,
+            "mdtp_b" : 1168965578279354368,
+            "abl_b" : 1168965578279354368,
+            "dsp_b" : 1168965578279354368,
+            "keymaster_b" : 1168965578279354368,
+            "boot_b" : 31806672368304128,
+            "cmnlib_b" : 1168965578279354368,
+            "cmnlib64_b" : 1168965578279354368,
+            "devcfg_b" : 16044073672507392,
+            "qupfw_b" : 16044073672507392,
+            "storsec_b" : 16044073672507392,
+            "ImageFv_b" : 16044073672507392,
+        }
+
         try:
             rf = BytesIO(data)
             for sectorsize in [512, 4096]:
@@ -495,12 +584,20 @@ class gpt(metaclass=LogBase):
                             sdata = rf.read(self.header.part_entry_size)
                             partentry = self.gpt_partition(sdata)
                             flags = partentry.flags
-                            if active:
-                                flags |= AB_PARTITION_ATTR_SLOT_ACTIVE << (AB_FLAG_OFFSET*8)
-                            else:
-                                flags &= AB_PARTITION_ATTR_UNBOOTABLE << (AB_FLAG_OFFSET*8)
-                            partentry.flags = flags
+                            #if active:
+                            #    #flags |= AB_PARTITION_ATTR_SLOT_ACTIVE << (AB_FLAG_OFFSET*8)
+                            #    flags = flags
+                            #else:
+                            #    #flags &= AB_PARTITION_ATTR_UNBOOTABLE << (AB_FLAG_OFFSET*8)
+                            #    flags = flags
+                            #if rname[-2:] == "_a":
+                            #    write_name = rname[:-1] + "b"
+                            #    type_data = f'\"{write_name}\" : {hexlify(partentry.type)} : {partentry.flags}' 
+                            #    print(type_data)
+                            partentry.flags = data_flags[partitionname]
+                            partentry.type = unhexlify(data_types[partitionname])
                             pdata = partentry.create()
+                            #print(f"{partitionname} : {pdata}")
                             return pdata, partition.entryoffset
                     break
             return None, None
