@@ -437,7 +437,7 @@ class firehose(metaclass=LogBase):
             data += self.modules.addpatch()
         data += f"/>\n</data>"
 
-        return True
+        #return True
         rsp = self.xmlsend(data)
         if rsp.resp:
             if display:
@@ -1356,7 +1356,6 @@ class firehose(metaclass=LogBase):
                                 headeroffset = gp.header.current_lba * gp.sectorsize
                                 start_sector_hdr = headeroffset // self.cfg.SECTOR_SIZE_IN_BYTES
                                 header = wdata[start_sector_hdr:start_sector_hdr + gp.header.header_size]
-                                self.warning(f"start_sector_hdr:{start_sector_hdr}")
                                 cmd_patch_multiple(lun, start_sector_patch, byte_offset_patch, headeroffset, pdata, header)
         except Exception as err:
             self.error(str(err))
