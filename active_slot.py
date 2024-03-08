@@ -6,6 +6,9 @@ AB_SLOT_ACTIVE_VAL = 0x3F
 AB_SLOT_INACTIVE_VAL = 0x0
 AB_SLOT_ACTIVE = 1
 AB_SLOT_INACTIVE = 0
+#['INFO: Calling handler for patch', 'INFO: Read Failed sector 4096, size 1 result 3']
+
+
 
 def make_inactive(data_bytes):
   new_data = data_bytes
@@ -21,6 +24,7 @@ def test_make_inactive(data):
   new_data = make_inactive(data)
   print(f"{hex(new_data)} is {'active' if is_active(new_data) else 'not active'}")
   return
+
 
 
 def main():

@@ -437,7 +437,7 @@ class firehose(metaclass=LogBase):
             data += self.modules.addpatch()
         data += f"/>\n</data>"
 
-        #return True
+        return True
         rsp = self.xmlsend(data)
         if rsp.resp:
             if display:
@@ -1309,6 +1309,7 @@ class firehose(metaclass=LogBase):
             header_size = len(header)
             size_each_patch = 4
             write_size = len(pdata)
+            self.warning(f"pdata: {pdata}")
             for i in range(0, write_size, size_each_patch):
                 pdata_subset = int(unpack("<I", pdata[offset:offset+size_each_patch])[0])
                 self.cmd_patch( lun, start_sector_patch, \
@@ -1323,6 +1324,10 @@ class firehose(metaclass=LogBase):
                                     size_each_patch, True)
                 offset += size_each_patch
             return True
+        def cmd_patch_multiple2(lun, start_sector, byte_offset_patch, wdata):
+            offset = 0
+            size_each_patch = 4
+            write_size = len(wdata)
 
         if slot.lower() not in ["a", "b"]:
             self.error("Only slots a or b are accepted. Aborting.")
@@ -1349,14 +1354,20 @@ class firehose(metaclass=LogBase):
                         if "_a" in slot or "_b" in slot:
                             pdata, poffset = gp.patch(data, partitionname, active=partslots[slot])
                             data[poffset:poffset + len(pdata)] = pdata
+                            #self.warning(f"data: {hexlify(data)}")
                             wdata = gp.fix_gpt_crc(data)
                             if wdata is not None:
                                 start_sector_patch = poffset // self.cfg.SECTOR_SIZE_IN_BYTES
                                 byte_offset_patch = poffset % self.cfg.SECTOR_SIZE_IN_BYTES
                                 headeroffset = gp.header.current_lba * gp.sectorsize
                                 start_sector_hdr = headeroffset // self.cfg.SECTOR_SIZE_IN_BYTES
-                                header = wdata[start_sector_hdr:start_sector_hdr + gp.header.header_size]
-                                cmd_patch_multiple(lun, start_sector_patch, byte_offset_patch, headeroffset, pdata, header)
+                                #header = wdata[start_sector_hdr:start_sector_hdr + gp.header.header_size]
+                                header = wdata[headeroffset:headeroffset + gp.header.header_size]
+                                self.warning(f"partition: {partitionname}")
+                                self.warning(f"sector_patch: {start_sector_patch}")
+                                self.warning(f"headeroffset: {headeroffset}")
+                                self.warning(f"header: {hexlify(header)}")
+                                cmd_patch_multiple(lun, start_sector_patch, byte_offset_patch, start_sector_hdr, pdata, header)
         except Exception as err:
             self.error(str(err))
             return False
