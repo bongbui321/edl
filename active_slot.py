@@ -1,3 +1,5 @@
+from binascii import hexlify, unhexlify
+
 AB_FLAG_OFFSET = 6
 AB_PARTITION_ATTR_SLOT_ACTIVE = (0x1 << 2)
 AB_PARTITION_ATTR_BOOT_SUCCESSFUL = (0x1 << 6)
@@ -25,6 +27,29 @@ def test_make_inactive(data):
   print(f"{hex(new_data)} is {'active' if is_active(new_data) else 'not active'}")
   return
 
+PART_ATT_PRIORITY_BIT = 48
+PART_ATT_ACTIVE_BIT = 50
+PART_ATT_MAX_RETRY_CNT_BIT = 51
+MAX_PRIORITY = 3
+PART_ATT_SUCCESS_BIT = 54
+PART_ATT_UNBOOTABLE_BIT = 55
+
+PART_ATT_PRIORITY_VAL = 0x3 << PART_ATT_PRIORITY_BIT
+PART_ATT_ACTIVE_VAL = 0x1 << PART_ATT_ACTIVE_BIT
+PART_ATT_MAX_RETRY_COUNT_VAL = 0x7 << PART_ATT_MAX_RETRY_CNT_BIT
+PART_ATT_SUCCESSFUL_VAL  = 0x1 << PART_ATT_SUCCESS_BIT
+PART_ATT_UNBOOTABLE_VAL = 0x1 << PART_ATT_UNBOOTABLE_BIT
+
+def set_boot_inactive(data):
+  data &= (~PART_ATT_PRIORITY_VAL & ~PART_ATT_ACTIVE_VAL)
+  data |= ((MAX_PRIORITY-1) << PART_ATT_PRIORITY_BIT)
+  return data
+
+def set_boot_active(data):
+  data |= (PART_ATT_PRIORITY_VAL | PART_ATT_ACTIVE_VAL | PART_ATT_MAX_RETRY_COUNT_VAL)
+  data &= (~PART_ATT_SUCCESSFUL_VAL) 
+  data &= (~PART_ATT_UNBOOTABLE_VAL)
+  return data
 
 
 def main():
@@ -42,6 +67,12 @@ def main():
   b_active = 0x103f000000000000
   a_active = 0x103d000000000000
   test_make_inactive(a_active)
+
+  boot_active = 0x006f000000000000
+  print(f"boot_flags to inactive:{set_boot_inactive(boot_active):02x}")
+
+  boot_inactive = 0x003a000000000000
+  print(f"boot_flags to active:{set_boot_active(boot_inactive):02x}")
 
 
 if __name__ == "__main__":
