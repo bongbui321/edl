@@ -11,7 +11,6 @@ AB_SLOT_INACTIVE = 0
 #['INFO: Calling handler for patch', 'INFO: Read Failed sector 4096, size 1 result 3']
 
 
-
 def make_inactive(data_bytes):
   new_data = data_bytes
   new_data &= ~(AB_PARTITION_ATTR_SLOT_ACTIVE << 48)
@@ -41,14 +40,16 @@ PART_ATT_SUCCESSFUL_VAL  = 0x1 << PART_ATT_SUCCESS_BIT
 PART_ATT_UNBOOTABLE_VAL = 0x1 << PART_ATT_UNBOOTABLE_BIT
 
 def set_boot_inactive(data):
+  data &= (~PART_ATT_SUCCESSFUL_VAL & ~PART_ATT_UNBOOTABLE_VAL)
+  data |= (PART_ATT_PRIORITY_VAL | PART_ATT_MAX_RETRY_COUNT_VAL)
+
   data &= (~PART_ATT_PRIORITY_VAL & ~PART_ATT_ACTIVE_VAL)
   data |= ((MAX_PRIORITY-1) << PART_ATT_PRIORITY_BIT)
   return data
 
 def set_boot_active(data):
   data |= (PART_ATT_PRIORITY_VAL | PART_ATT_ACTIVE_VAL | PART_ATT_MAX_RETRY_COUNT_VAL)
-  data &= (~PART_ATT_SUCCESSFUL_VAL) 
-  data &= (~PART_ATT_UNBOOTABLE_VAL)
+  data &= (~PART_ATT_SUCCESSFUL_VAL & ~PART_ATT_UNBOOTABLE_VAL)
   return data
 
 
