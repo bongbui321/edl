@@ -40,16 +40,18 @@ PART_ATT_SUCCESSFUL_VAL  = 0x1 << PART_ATT_SUCCESS_BIT
 PART_ATT_UNBOOTABLE_VAL = 0x1 << PART_ATT_UNBOOTABLE_BIT
 
 def set_boot_inactive(data):
-  data &= (~PART_ATT_SUCCESSFUL_VAL & ~PART_ATT_UNBOOTABLE_VAL)
-  data |= (PART_ATT_PRIORITY_VAL | PART_ATT_MAX_RETRY_COUNT_VAL)
+  #data &= (~PART_ATT_SUCCESSFUL_VAL & ~PART_ATT_UNBOOTABLE_VAL)
+  #data |= (PART_ATT_PRIORITY_VAL | PART_ATT_MAX_RETRY_COUNT_VAL)
 
   data &= (~PART_ATT_PRIORITY_VAL & ~PART_ATT_ACTIVE_VAL)
   data |= ((MAX_PRIORITY-1) << PART_ATT_PRIORITY_BIT)
+
   return data
 
 def set_boot_active(data):
   data |= (PART_ATT_PRIORITY_VAL | PART_ATT_ACTIVE_VAL | PART_ATT_MAX_RETRY_COUNT_VAL)
-  data &= (~PART_ATT_SUCCESSFUL_VAL & ~PART_ATT_UNBOOTABLE_VAL)
+  tmp = (~PART_ATT_SUCCESSFUL_VAL & ~PART_ATT_UNBOOTABLE_VAL)
+  data &= tmp
   return data
 
 
@@ -73,7 +75,7 @@ def main():
   print(f"boot_flags to inactive:{set_boot_inactive(boot_active):02x}")
 
   boot_inactive = 0x003a000000000000
-  print(f"boot_flags to active:{set_boot_active(boot_inactive):02x}")
+  print(f"boot_flags to active:{(set_boot_active(boot_inactive)):x}")
 
 
 if __name__ == "__main__":
